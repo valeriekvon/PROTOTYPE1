@@ -1,0 +1,290 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  @font-face {
+    font-family: "Headers";
+    src: url('/fonts/PPNeueMachina-InktrapLight.otf') ;
+    font-weight: normal;
+  }
+
+
+  .header {
+    font-family: "Headers";
+    font-weight: 500;   
+    background-color: #0e50c8;
+    display: flex;           
+    flex-wrap: wrap;        
+    gap: 1rem;   
+    padding: 30px 30px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font: 1.2em ;     
+    font-size: 1.5em;
+    color: white;
+    align-items: center;
+    justify-content: space-between; 
+  
+  }
+  .button-header {
+    font-family: "Headers";
+    font-weight: 500;   
+    display: flex;           
+    flex-wrap: wrap;        
+    align-items: center;
+    justify-content: center;
+    gap: 1rem; 
+  }
+
+  .mainbody {
+    flex: 1;        /* fills rest of viewport */
+    display: flex;
+    flex-direction: column;
+    font-family: "Headers";
+    font-weight: 500;   
+    color: #0e50c8;
+    font-size: 1.5em;
+
+  }
+  .section-about-us {
+    
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding: 10px 10px;
+    display: flex;           
+    flex-wrap: wrap;        
+    /* gap: 1rem;    */
+    align-items: center;
+  }
+
+
+  .index-outer {
+    
+    display: flex; 
+    padding-bottom: 10px;
+    padding: 10px 10px;          
+    flex-wrap: wrap;        
+    align-items: center;
+    background-color: #0e50c8;
+    color: white;
+    justify-content: space-between;
+  }
+  .index {
+    color: white;
+    height: 100%;
+    align-items: center;
+    /* padding-bottom: 10px; */
+    /* padding: 10px 10px; */
+    display: flex;           
+    flex-wrap: wrap;   
+    cursor: pointer;
+  }
+
+  .index-item {
+  
+    flex: 1;        /* fills rest of mainbody */
+    display: flex;
+    background-color: #0e50c8;
+    color: white;
+    display: flex;           
+    flex-wrap: nowrap;      
+    /* align-items: center; */
+    cursor: pointer;
+    gap: 2rem; 
+    justify-content: space-between;
+    align-items: stretch;  
+    transition: max-height 420ms ease, opacity 420ms ease;
+    overflow: hidden;
+    max-height: 0;
+  opacity: 0;
+  }
+  .index-item:not(.is-hidden) {
+    max-height: 2000px;            
+    opacity: 1;
+  }
+
+  .index-item-text {
+    flex: 1;           
+    max-width: 45%; 
+    font-size: 0.55em;
+    padding-left: 10px;
+    padding-top: 100px;
+  }
+
+
+  .index-item-images {
+    min-height: 320px;    
+    flex: 1;
+    max-width: 45%;
+    background-color: #7bdd3a;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;    
+  }
+ 
+  .index-item-text,
+  .index-item-images {
+    flex: 0 0 55%;
+  }
+  
+  img {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    
+  }
+
+  .nav-svg {
+    width: 40px;
+    height: 40px;
+    align-items: center;
+  }
+
+
+  .nav-svg2 {
+    width: 20px;
+    height: 19px;
+    align-items: center;
+    margin-left: auto;
+    padding-right: 600px;
+    gap: 2rem;
+    cursor: pointer;
+  }
+
+
+  .logo-svg {
+    /* width: 40px; */
+    /* height: 10%; */
+    width: 12rem;
+    height: 100%;
+    align-items: center;
+    gap: 1rem;
+    padding-right: 50px;
+  }
+  .nav-svg1{
+    width: 12px;
+    height: 12px;
+    align-items: center;
+    /* padding-right: 10px; */
+    cursor: pointer;
+    transition: transform 200ms ease;
+  }
+.lot {
+    margin-left: auto;
+
+}
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem; 
+    margin-left: auto;
+  }
+
+
+  /* .index-item.is-hidden {        
+    display: none;
+  } */
+
+  .list-projects.is-hidden1 {         
+    display: none;
+  }
+
+  .list-projects {
+    color: white;
+    background-color: #0e50c8;
+    flex: 1 1 auto; 
+  }
+
+  .list-projects1 {
+    cursor: pointer;
+    padding-left: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+ 
+.search-filter {
+    background-color:#0e50c8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem; 
+    font-size: 0.6em;
+}
+
+.search-filter.is-hidden{
+    display: none;
+}
+  .rotated {
+    display: inline-block;       /* or block */  
+    transform-origin: 50% 50%;
+    transform: rotate(90deg);
+  }
+  
+  hr {
+        margin: 0px;
+        height: 1.5px;
+        width: 100%; 
+        border: none;
+        background-color: white;
+  }
+
+  .square {
+    height: 10px;
+    width: 10px;
+    /* background-color: #555; */
+    border-color: white;
+    border-width: 1px ;
+    border-style: solid;
+  }
+  .list-projects1:hover {
+    background-color: #dbe120;
+    color: #0e50c8;
+  }
+
+  .list-item:hover {
+    text-decoration-line: underline;
+  }
+
+  .description-text {
+    font-size: 3em;
+    padding-left: 10px;
+    flex: 1 1 auto; 
+    transition: max-height 420ms ease, opacity 420ms ease;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .description-text:not(.is-hidden) {
+    max-height: 2000px;           
+    opacity: 1;
+  }
+
+  .header, .button-header { color: #fff; }
+
+  /* Make the links inherit that white and remove underline */
+  .button-header a,
+  .button-header a:link,
+  .button-header a:visited {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  /* Keep underline off on hover/focus/active too */
+  .button-header a:hover,
+  .button-header a:focus,
+  .button-header a:active {
+    color: inherit;
+    text-decoration: none;
+  }
