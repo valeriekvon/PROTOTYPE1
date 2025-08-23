@@ -1,0 +1,57 @@
+/* === Circle swap variables === */
+:root{
+    --x: 50vw;          /* cursor X (set by JS) */
+    --y: 50vh;          /* cursor Y (set by JS) */
+    --r: 32px;          /* circle radius */
+    --blue: #0e50c8;    /* brand blue */
+  }
+  
+  /* Masked overlay revealing the alt theme in a circle */
+  #swap-overlay{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    -webkit-mask: radial-gradient(circle var(--r) at var(--x) var(--y), #000 98%, transparent 100%);
+    mask: radial-gradient(circle var(--r) at var(--x) var(--y), #000 98%, transparent 100%);
+  }
+  
+  /* The cloned page; absolute so we can translate with scroll */
+  #swap-overlay .alt{
+    position: absolute;
+    left: 0;
+    top: 0;
+    min-height: 100vh;
+  
+    /* default alt theme: blue bg + white text (affects base white areas) */
+    background: var(--blue);
+    color: #fff;
+  }
+  
+  /* Make ALL text inside the blue circle white by default */
+  #swap-overlay .alt *:not(svg):not(path){
+    color: #fff !important;
+  }
+  
+  /* Flip sections that are blue in the base to white bg + blue text in the circle */
+  #swap-overlay .alt .header,
+  #swap-overlay .alt .index-outer,
+  #swap-overlay .alt .search-filter,
+  #swap-overlay .alt .list-projects,
+  #swap-overlay .alt .index-item{
+    background: #fff !important;
+    color: var(--blue) !important;
+  }
+  
+  /* Descendants too (overrides the blanket white) */
+  #swap-overlay .alt .header *:not(svg):not(path),
+  #swap-overlay .alt .index-outer *:not(svg):not(path),
+  #swap-overlay .alt .search-f *:not(svg):not(path),
+  #swap-overlay .alt .list-projects *:not(svg):not(path),
+  #swap-overlay .alt .index-item *:not(svg):not(path){
+    color: var(--blue) !important;
+  }
+  
+  /* (Optional) hide the default cursor if you use a custom one */
+  html, body { cursor: none; }
+  
