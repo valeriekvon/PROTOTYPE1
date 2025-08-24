@@ -5,6 +5,11 @@ let cnv;
 const TARGET = -PI / 2;  // straight up
 const EPS = 0.25;        // lock tolerance (~14°)
 
+let myFont;
+function preload() {
+  myFont = loadFont('fonts/PPNeueMachina-InktrapLight.otf');
+}
+
 // Ring geometry
 const RING_DEG = 260;
 const RING_SPAN = RING_DEG * PI/180;
@@ -29,7 +34,7 @@ function setup() {
   cnv = createCanvas(windowWidth, windowHeight - headerH);
   cnv.position(0, headerH);
 
-  textFont('system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
+//   textFont('system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
   textSize(16);
 
   // Initial knob layout based on canvas size
@@ -48,7 +53,7 @@ function draw() {
   // Draw knobs
   for (const k of knobs) k.display();
 
-  // Screen frame + waveform (optional UI)
+  // Screen frame + waveform
   const wx = 0, wy = 80, ww = width, wh = 260;
 
   noFill();
@@ -73,7 +78,7 @@ function draw() {
 
   if (!triggered && knobs.every(k => k.isAligned())) {
     triggered = true;
-    setTimeout(() => window.location.replace("nodes.html"), 50);
+    setTimeout(() => window.location.replace("nodes.html"), 2000);
   }
 }
 
@@ -109,9 +114,13 @@ class Knob {
     // Create a DOM label once; style so it doesn't interfere with dragging
     this.el = createP(label);
     this.el.style('margin', '0');
+    this.el.style('color', '#0e50c8');
     this.el.style('position', 'absolute');
     this.el.style('pointer-events', 'none');
-    this.el.style('transform', 'translateX(-50%)'); // center on x
+    this.el.style('font-family', 'PPNeueMachina, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
+    this.el.style('font-weight', '300');
+    
+    this.el.style('transform', 'translateX(-50%)'); 
   }
 
   contains(px,py){ return dist(px,py,this.x,this.y) < this.r; }
@@ -126,9 +135,9 @@ class Knob {
     push(); translate(this.x, this.y);
 
     // Outer ring
-    noFill();
+    // fill(white);
     strokeWeight(12);
-    stroke(COL_RING_BG);
+    stroke('#white');
     drawWrappedArc(0, 0, (this.r + 16) * 2, RING_START, RING_END);
 
     // Progress arc
