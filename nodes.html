@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
-  <script src="interaction.js" defer></script>
+
   
  
 
@@ -18,9 +18,9 @@
     <div class="nav-right">
         <div class="button-header button_header1"> 
           <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg"/>
-          <div class="nav-arrow"><p><a href="nodes.html" target="_blank">SYNTHETIC MACHINE</a></p></div>
+          <div class="nav-arrow"><p><a href="nodes.html" >SYNTHETIC MACHINE</a></p></div>
           <img src="SVG/Asset 2.svg" alt="Arrow" class="nav-svg"/>
-          <div class="nav-text"><p><a href="index.html" target="_blank">INDEX </a></p></div>
+          <div class="nav-text"><p><a href="index.html">INDEX </a></p></div>
         </div>
         </div>
         <div class="button-header button-header2">
@@ -28,8 +28,8 @@
         </div>
   </div>
 
-  <div class="mainbody">
-    
+  <div class="mainbody transition-fade" id="swup">
+    <div id="machine"></div> 
    
 </div>
 
@@ -39,5 +39,10 @@
     src="https://code.jquery.com/jquery-3.2.1.min.js"
     integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
     crossorigin="anonymous"></script> 
+     <script src="https://unpkg.com/swup@4"></script>
+  <script src="https://unpkg.com/@swup/forms-plugin@2"></script>
+  <script src="https://unpkg.com/@swup/scroll-plugin@3"></script>
+  <script src="https://unpkg.com/@swup/head-plugin@2"></script>
     <script src="sketch.js"></script>
+    <script src="interaction.js" defer></script>
 </html>
