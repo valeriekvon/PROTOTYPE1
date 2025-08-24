@@ -1,4 +1,4 @@
-
+let cnv;
 
 const MAX_SELECTED = 3;
 const MATCH_MODE = "OR";          // "OR" (any tag) or "AND" (all tags)
@@ -84,9 +84,9 @@ let draggingNode = null;
 
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-//   if (fontRegular) textFont(fontRegular);
-
+  cnv = createCanvas(windowWidth, windowHeight);
+  cnv.parent('machine');
+  window.__p5cleanup = () => { noLoop(); cnv?.remove(); };
   setupLeftPanel();
   setupDropZoneAndPlay();
 
@@ -679,3 +679,4 @@ function shareTag(a, b) {
   for (const t of a) if (b.includes(t)) return true;
   return false;
 }
+
