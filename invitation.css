@@ -1,0 +1,16 @@
+.button-header {
+    text-transform: uppercase;
+   font-size: 0.8em; 
+   max-height: 110px;
+
+}
+.header {
+    min-height: 76px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* optional, if you want no scroll at all */
+  }
+  
