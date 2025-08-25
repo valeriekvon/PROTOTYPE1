@@ -10,6 +10,29 @@ function preload() {
   myFont = loadFont('fonts/PPNeueMachina-InktrapLight.otf');
 }
 
+
+
+// Wave settings
+const WAVE_SPEED   = 0.12;   // horizontal drift speed
+const WAVE_DETAIL  = 0.0008; // horizontal noise scale (smaller = smoother)
+const WAVE_OCTAVES = 3;      // more = richer detail (2–5 is nice)
+const WAVE_PAD     = 5;     // top/bottom padding inside band
+
+function fbm(n) {
+  // fractal Brownian motion: layered noise for richer shape
+  let total = 0, amp = 0.5, freq = 1, norm = 0;
+  for (let i = 0; i < WAVE_OCTAVES; i++) {
+    total += amp * noise(n * freq);
+    norm  += amp;
+    amp  *= 0.5;
+    freq *= 2.0;
+  }
+  return total / norm; // 0..1
+}
+
+
+
+
 // Ring geometry
 const RING_DEG = 260;
 const RING_SPAN = RING_DEG * PI/180;
@@ -27,7 +50,7 @@ let selectedKnob = null;
 let triggered = false;
 
 function setup() {
-  // Place canvas under header (if present)
+
   const headerEl = document.querySelector('.header');
   const headerH = headerEl ? headerEl.offsetHeight : 0;
 
@@ -54,27 +77,52 @@ function draw() {
   for (const k of knobs) k.display();
 
   // Screen frame + waveform
-  const wx = 0, wy = 80, ww = width, wh = 260;
+  // Screen frame + waveform band
+const wx = 0, wy = 80, ww = width, wh = 260;
 
-  noFill();
-  noStroke();
-  strokeWeight(2);
-  rect(wx, wy, ww, wh, 12);
+// optional rounded band (invisible fill)
+noFill();
+noStroke();
+strokeWeight(2);
+rect(wx, wy, ww, wh, 12);
 
-  let total = 0;
-  for (const k of knobs) total += Math.abs(normalizeAngle(k.angle - TARGET)) / PI;
-  const cycles = map(total, 0, 3, 0, 6);
+// map knobs → a subtle “energy” that changes cycles/amp
+let energy = 0;
+for (const k of knobs) energy += Math.abs(normalizeAngle(k.angle - TARGET)) / PI; // 0..3
+const t = millis() * 0.001;
 
-  noFill();
-  stroke(COL_KNOB);
-  strokeWeight(2);
-  beginShape();
-  for (let x = 0; x <= ww; x++) {
-    const t = map(x, 0, ww, 0, cycles * TWO_PI);
-    const y = wy + wh/2 + Math.sin(t) * (wh/2 - 10);
-    vertex(wx + x, y);
-  }
-  endShape();
+
+noFill();
+stroke(COL_KNOB);
+strokeWeight(2);
+strokeJoin(ROUND);
+strokeCap(ROUND);
+
+beginShape();
+// start with two off-screen control points for nicer curve edges
+curveVertex(wx - 20, wy + wh * 0.5);
+
+for (let x = 0; x <= ww; x += 2) { // step of 2px keeps it light but smooth
+  // drifting with time
+  const nx = (x * WAVE_DETAIL) + (t * WAVE_SPEED);
+
+  // rich noise value in 0..1 -> -1..1
+  const n = (fbm(nx) - 0.5) * 0.5;
+
+  // a slow envelope that gently varies amplitude along the band
+  const env = map(fbm(nx * 0.55 + 100.0), 0, 1, 0.35, 1.0);
+
+  // amplitude reacts to knobs (but stays tasteful)
+  const amp = (wh * 0.1 - WAVE_PAD) * env * map(energy, 0, 3, 0.5, 1.0);
+
+  const y = wy + wh * 0.5 + n * amp;
+  curveVertex(wx + x, y);
+}
+
+// end with two extra control points
+curveVertex(wx + ww + 20, wy + wh * 0.5);
+endShape();
+
 
   if (!triggered && knobs.every(k => k.isAligned())) {
     triggered = true;
@@ -111,7 +159,7 @@ class Knob {
     this.label = label;
     this.angle = Math.random()*TWO_PI - PI;
 
-    // Create a DOM label once; style so it doesn't interfere with dragging
+ 
     this.el = createP(label);
     this.el.style('margin', '0');
     this.el.style('color', '#0e50c8');
