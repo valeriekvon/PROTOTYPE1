@@ -7,7 +7,7 @@ const EPS = 0.25;        // lock tolerance (~14°)
 
 let myFont;
 function preload() {
-  myFont = loadFont('fonts/PPNeueMachina-InktrapLight.otf');
+  myFont = loadFont('./fonts/PPNeueMachina-InktrapLight.otf');
 }
 
 
