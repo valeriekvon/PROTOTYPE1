@@ -48,28 +48,28 @@ $(document).ready(() => {
     
     })
 
-    const cursor = document.querySelector('.cursor');
 
-    // move the custom cursor
-    window.addEventListener('mousemove', (e) => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top  = e.clientY + 'px';
-      cursor.style.opacity = '1';
-    });
-    
-    // (optional) hide when leaving the window
-    window.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-    });
+  const trigger = document.getElementById('mobileTrigger');
+  const overlay = document.getElementById('mobileOverlay');
 
+  function toggleOverlay() {
+    const willOpen = !overlay.classList.contains('open');
+    overlay.classList.toggle('open', willOpen);
+    trigger.setAttribute('aria-expanded', String(willOpen));
+    overlay.setAttribute('aria-hidden', String(!willOpen));
+    document.body.classList.toggle('menu-open', willOpen);
+  }
 
+  trigger?.addEventListener('click', toggleOverlay);
 
-    const trigger = document.getElementById('mobileTrigger');
-    const menu = document.getElementById('mobileMenu');
-  
-    trigger?.addEventListener('click', () => {
-      menu.classList.toggle('open');
-      // (Optional) accessibility state:
-      const expanded = trigger.getAttribute('aria-expanded') === 'true';
-      trigger.setAttribute('aria-expanded', String(!expanded));
-    });
+  // Optional: close on ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) toggleOverlay();
+  });
+
+  // Optional: close when a link is clicked
+  overlay.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link) toggleOverlay();
+  });
+
