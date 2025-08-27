@@ -61,3 +61,15 @@ $(document).ready(() => {
     window.addEventListener('mouseleave', () => {
       cursor.style.opacity = '0';
     });
+
+
+
+    const trigger = document.getElementById('mobileTrigger');
+    const menu = document.getElementById('mobileMenu');
+  
+    trigger?.addEventListener('click', () => {
+      menu.classList.toggle('open');
+      // (Optional) accessibility state:
+      const expanded = trigger.getAttribute('aria-expanded') === 'true';
+      trigger.setAttribute('aria-expanded', String(!expanded));
+    });
