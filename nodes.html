@@ -17,16 +17,21 @@
     <div class="logo_PROJCT"><img src = "SVG/logo-white.svg" alt="logo" class = "logo-svg"/></div>
     <div class="nav-right">
       
-      <div class="mobile" id="mobileTrigger">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <button class="mobile" id="mobileTrigger"
+        aria-controls="mobileOverlay"
+        aria-expanded="false"
+        aria-label="Open menu"
+        style="background:none;border:0;padding:0;cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </div>
       
     
-      <nav class="mobile-menu" id="mobileMenu">
+      <nav class="mobile-overlay" id="mobileOverlay" aria-hidden="true">
+        <div class="overlay-inner">
        <div class ='row1'><img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/><a href="nodes.html">SYNTHETIC MACHINE</a></div> 
-      <div class ='row2'> <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/><a href="index.html">INDEX</a></div> 
+      <div class ='row2'> <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/><a href="index.html">INDEX</a></div> </div> 
       </nav>
 
 
