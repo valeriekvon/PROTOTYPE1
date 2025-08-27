@@ -15,8 +15,9 @@ function drawTopBar() {
       const bodyH = topBarH - bodyY - 16;
       const picked = selected.map(s => s.label).join(", ") || "—";
       text(`Drag floating tags into the zone below, then hit Play.\nSelected: ${picked}`, padX, bodyY, contentW, Math.max(0, bodyH));
+    
     } else {
-      
+
     fill(COLORS.blue); 
     rect(0, 0, width, topBarH);
       const node = activeNode || centerNode;
@@ -27,7 +28,7 @@ function drawTopBar() {
       textSize(UI.fontBody);
       const desc = node.info?.desc || "Click a node to view details.";
       const bodyY = padY + (UI.fontTitle + 8);
-      const bodyH = topBarH - bodyY - 50;
+      const bodyH = topBarH - bodyY ;
       text(desc, padX, bodyY, contentW, Math.max(0, bodyH));
   
       const rowH = 18;
