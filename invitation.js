@@ -13,10 +13,12 @@ function preload() {
 
 
 // Wave settings
-const WAVE_SPEED   = 0.12;   // horizontal drift speed
-const WAVE_DETAIL  = 0.0008; // horizontal noise scale (smaller = smoother)
-const WAVE_OCTAVES = 3;      // more = richer detail (2–5 is nice)
-const WAVE_PAD     = 5;     // top/bottom padding inside band
+// Wave settings
+const WAVE_SPEED   = 0.18;    // a bit faster drift
+const WAVE_DETAIL  = 0.0016;  // more curvature across the width
+const WAVE_OCTAVES = 4;       // richer detail
+const WAVE_PAD     = 10;      // keep off the band edges
+
 
 function fbm(n) {
   // fractal Brownian motion: layered noise for richer shape
@@ -76,22 +78,22 @@ function draw() {
   // Draw knobs
   for (const k of knobs) k.display();
 
-  // Screen frame + waveform
-  // Screen frame + waveform band
+
+// Screen frame + waveform band
+// Screen frame + waveform band
 const wx = 0, wy = 80, ww = width, wh = 260;
 
-// optional rounded band (invisible fill)
 noFill();
 noStroke();
 strokeWeight(2);
 rect(wx, wy, ww, wh, 12);
 
-// map knobs → a subtle “energy” that changes cycles/amp
+// knob “energy” 0..3 (unaltered)
 let energy = 0;
-for (const k of knobs) energy += Math.abs(normalizeAngle(k.angle - TARGET)) / PI; // 0..3
+for (const k of knobs) energy += Math.abs(normalizeAngle(k.angle - TARGET)) / PI;
 const t = millis() * 0.001;
 
-
+// style for the wave line
 noFill();
 stroke(COL_KNOB);
 strokeWeight(2);
@@ -99,29 +101,28 @@ strokeJoin(ROUND);
 strokeCap(ROUND);
 
 beginShape();
-// start with two off-screen control points for nicer curve edges
 curveVertex(wx - 20, wy + wh * 0.5);
 
-for (let x = 0; x <= ww; x += 2) { // step of 2px keeps it light but smooth
-  // drifting with time
+for (let x = 0; x <= ww; x += 2) {
+  
   const nx = (x * WAVE_DETAIL) + (t * WAVE_SPEED);
 
-  // rich noise value in 0..1 -> -1..1
-  const n = (fbm(nx) - 0.5) * 0.5;
+  const n = (fbm(nx) - 0.5) * 2.0;
 
-  // a slow envelope that gently varies amplitude along the band
-  const env = map(fbm(nx * 0.55 + 100.0), 0, 1, 0.35, 1.0);
+  
+  const env = map(fbm(nx * 0.25 + 100.0), 0, 1, 0.85, 1.0);
 
-  // amplitude reacts to knobs (but stays tasteful)
-  const amp = (wh * 0.1 - WAVE_PAD) * env * map(energy, 0, 3, 0.5, 1.0);
 
-  const y = wy + wh * 0.5 + n * amp;
+  const amp = (wh * 0.9 - WAVE_PAD) * env * map(energy, 0, 3, 0.8, 1.9);
+
+  const y = wy + wh * 0.7 + n * amp;
   curveVertex(wx + x, y);
 }
 
-// end with two extra control points
 curveVertex(wx + ww + 20, wy + wh * 0.5);
 endShape();
+
+
 
 
   if (!triggered && knobs.every(k => k.isAligned())) {
@@ -185,7 +186,7 @@ class Knob {
     // Outer ring
     // fill(white);
     strokeWeight(12);
-    stroke('#white');
+    stroke('white');
     drawWrappedArc(0, 0, (this.r + 16) * 2, RING_START, RING_END);
 
     // Progress arc
