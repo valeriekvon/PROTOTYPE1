@@ -1,8 +1,8 @@
 function setupSelectUI() {
-    const zx = UI.zonePadX;
+    const zx = UI.zonePadX+40;
     const zy = UI.zonePadY;
     const zw = baseWidth - UI.zonePadX * 2;
-    const zh = baseHeight - zy - UI.zoneBottom;
+    const zh = baseHeight - zy - UI.zoneBottom+100;
     dropZone = { x: zx, y: zy, w: zw, h: zh };
   
     playBtn = { x: width * 0.5, y: UI.playY(height), r: UI.playRadius };
