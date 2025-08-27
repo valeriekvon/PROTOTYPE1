@@ -242,3 +242,21 @@ function windowResized() {
 
 
 
+
+
+
+
+const cursor = document.querySelector('.cursor');
+
+// move the custom cursor
+window.addEventListener('mousemove', (e) => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+  cursor.style.opacity = '1';
+});
+
+// (optional) hide when leaving the window
+window.addEventListener('mouseleave', () => {
+  cursor.style.opacity = '0';
+});
+
