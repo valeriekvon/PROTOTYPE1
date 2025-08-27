@@ -126,7 +126,9 @@ html, body {
     font-size: 0.55em;
     padding-left: 10px;
     padding-top: 100px;
+    padding-right: 60px;
     margin-left: auto;
+    
   }
 
 
@@ -293,7 +295,7 @@ html, body {
     transition: max-height 420ms ease, opacity 420ms ease;
     overflow: hidden;
     max-height: 0;
-    max-width: 50%;
+    /* max-width: 50%; */
     opacity: 0;
   }
 
