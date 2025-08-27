@@ -5,6 +5,7 @@ html, body {
     width: 100%;
     cursor:url(myBall.cur),auto;
     /* cursor: none; */
+    overflow: hidden;
   }
 
 
@@ -133,6 +134,7 @@ html, body {
     max-width: 70%;
     background-color: #dbe120;
     padding: 20px;
+    margin-top:-25px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -155,8 +157,16 @@ html, body {
     width: 40px;
     height: 40px;
     align-items: center;
+    fill: transparent;
+    stroke: white;
   }
-
+  .nav-svg:hover {
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    fill: white;
+    stroke: #0e50c8;
+  }
 
   .nav-svg2 {
     width: 20px;
