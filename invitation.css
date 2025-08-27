@@ -16,7 +16,7 @@ html, body {
   }
   @font-face {
     font-family: 'PPNeueMachina';         
-    src:   url('/fonts/PPNeueMachina-InktrapLight.otf') format('opentype');
+    src:   url('./fonts/PPNeueMachina-InktrapLight.otf') format('opentype');
     font-weight: 300;                        /* Light */
     font-style: normal;
     font-display: swap;
