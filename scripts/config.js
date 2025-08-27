@@ -74,7 +74,7 @@ const COLORS = {
       topBarMin:   110,
       topBarMax:   240,
   
-      :    mobile ? 12 : 40,
+      zonePadX:    mobile ? 12 : 40,
       zonePadY:    mobile ? 90 : 120,
       zoneBottom:  mobile ? 140 : 160,
   
