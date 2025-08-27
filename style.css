@@ -5,6 +5,7 @@ html, body {
     width: 100%;
     cursor:url(myBall.cur),auto;
     /* cursor: none; */
+    font-family: "Headers";
     overflow: hidden;
   }
 
@@ -50,7 +51,7 @@ html, body {
   }
 
   .mainbody {
-    flex: 1;        /* fills rest of viewport */
+    flex: 1;       
     display: flex;
     flex-direction: column;
     font-family: "Headers";
@@ -80,7 +81,7 @@ html, body {
     align-items: center;
     background-color: #0e50c8;
     color: white;
-    justify-content: space-between;
+    justify-content: flex-start; 
   }
   .index {
     color: white;
@@ -125,6 +126,7 @@ html, body {
     font-size: 0.55em;
     padding-left: 10px;
     padding-top: 100px;
+    margin-left: auto;
   }
 
 
@@ -173,7 +175,7 @@ html, body {
     height: 19px;
     align-items: center;
     margin-left: auto;
-    padding-right: 600px;
+    /* padding-right: 600px; */
     gap: 2rem;
     cursor: pointer;
   }
@@ -320,86 +322,108 @@ html, body {
 
 
 
-.mobile-menu {
-  display: none;
-  background:#0e50c8;
-  color:#fff;
-  position: absolute;
-  top: 60px;         
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-}
 
 
 .desktop { display: none; }
 .mobile  { display: none; }
 
 
-@media only screen and (max-width: 500px) {
-  .mobile  { display: block; }   
-  .desktop { display: none; }    
-  .logo_PROJCT { flex: 1; }      
-  .nav-right { margin-left: auto; } 
-}
 
-
-@media only screen and (min-width: 501px) {
-  .desktop { display: flex; }    
-  .mobile  { display: none; }    
-}
-@media only screen and (max-width: 500px) {
-  .mobile-menu.open { 
-    display: block; 
-    opacity: 1;
-  }
-}
-.mobile-menu {
-  /* layout */
-  position: absolute;       
-  left: 0; right: 0;
-                 
-
-
-  overflow: hidden;           
-  max-height: 0;           
-  opacity: 0;                 
-  transition: max-height 420ms ease, opacity 420ms ease;
-
-
-  background-color: #0e50c8;
-  padding: 30px;
-  display: flex;              /* flex works fine with max-height */
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* OPEN state (add .open class via JS) */
-.mobile-menu.open {
-  max-height: 100em;           /* to something numeric (not auto) */
-  opacity: 1;
-}
-
-
+/* Make header a stacking context; overlay will sit above it anyway */
 .header { position: relative; z-index: 1000; }
 
-.mobile-menu {   
+/* Fullscreen mobile overlay: CLOSED state */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;                      /* left:0; top:0; right:0; bottom:0 */
+  background: #0e50c8;
+  color: #fff;
+  z-index: 2000;                 /* above everything */
+  display: flex;
   align-items: center;
-  opacity: 0;
-  height: 100em;
-  padding: 30px;
-  background-color: #0e50c8;
-  transition: max-height 420ms ease, opacity 420ms ease;
+  justify-content: center;
 
+  /* Fill full viewport on mobile (handles iOS URL bar) */
+  height: 100dvh;                /* dynamic viewport; fallback next line */
+  min-height: 100vh;
+
+  /* Start hidden but mounted (so it can animate) */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity 260ms ease, transform 260ms ease, visibility 0s linear 260ms;
+}
+
+/* OPEN state */
+.mobile-overlay.open {
+  opacity: 1;
+  color: #fff;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+   
+  transition: opacity 260ms ease, transform 260ms ease; /* visibility shows immediately */
+}
+
+.mobile-overlay .overlay-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+  padding: 32px;
+  color: #fff;
+}
+
+.mobile-overlay a {
+  font-size: 1.4rem;
+  color: #fff;
+  text-decoration: none;
+}
+.mobile-overlay a:hover { text-decoration: underline; }
+
+/* Hide desktop items on small screens, show hamburger */
+.desktop { display: none; }
+.mobile  { display: none; }
+
+@media (max-width: 500px) {
+  .mobile  { display: inline-flex; align-items: center; }
+  .desktop { display: none; }
+  .logo_PROJCT { flex: 1; }
+  .nav-right { margin-left: auto;
+  z-index: 10000; }
+  .logo-svg {z-index: 100000;}
+  .description-text {font-size: 1.6em;}
+  body {overflow: auto;}
+  .search-filter {font-size: 0.3em;}
+  .index-item {
+    flex-direction: column;      
+    gap: 1rem;
+  }
+
+  
+  .index-item-text,
+  .index-item-images {
+    flex: 0 0 auto;              
+    max-width: 100%;
+  }
+
+
+  .index-item-text { padding-top: 16px; }
+
+
+  .index-item-images img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
 }
 
 
-
-a {
-  font-size: 1em;
-  color: white;
-  text-decoration: none;
+@media (min-width: 501px) {
+  .desktop { display: flex; }
+  .mobile  { display: none; }
+  .mobile-overlay { display: none; }
 }
 .nav-svg-mobile {
   width: 20px;
@@ -407,9 +431,10 @@ a {
   align-items: center;
   fill: transparent;
   stroke: white;
-
 }
 
-.row1, .row2 {
-  display: block;
-}
+
+.cursor-circle { pointer-events: none; }
+
+
+body.menu-open { overflow: hidden; }
