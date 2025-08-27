@@ -36,6 +36,6 @@ html, body {
     pointer-events: none;
     z-index: 9999;
     /* use a relative path unless you really serve from site root */
-    background: url("/images/1x/cursor-1.png") center/contain no-repeat;
+    background: url("./images/1x/cursor-1.png") center/contain no-repeat;
   }
   
