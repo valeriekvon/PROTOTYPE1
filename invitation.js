@@ -213,7 +213,7 @@ class Knob {
     pop();
 
     // --- DOM label aligned to canvas coordinates ---
-    const rect = cnv.elt.getBoundingClientRect(); // canvas position in page
+    const rect = cnv.elt.getBoundingClientRect(); 
     const pageX = rect.left + window.scrollX;
     const pageY = rect.top  + window.scrollY;
     const labelX = pageX + this.x;
@@ -237,3 +237,7 @@ function windowResized() {
   knobs[2].x = xs[2];
   knobs.forEach(k => k.y = height * 0.85);
 }
+
+
+
+
