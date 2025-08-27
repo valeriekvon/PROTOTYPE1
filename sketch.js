@@ -1,23 +1,12 @@
-let cnv;
-
-const MAX_SELECTED = 3;
-const MATCH_MODE = "OR";          // "OR" (any tag) or "AND" (all tags)
-const PANEL_W = 320;
 
 const COLORS = {
   blue: "#0E50C8",
-  blueLight: "#1565C0",
   blueMid: "#1E56D9",
-  blueSoft: "#2E7DFF",
   white: "#FFFFFF",
-  grayText: "#5A6B7A",
-  grayLine: "#D6DFEA",
   bg: "#FFFFFF",
-  tagOutline: "rgba(255,255,255,0.35)",
-  tagFill: "#225DDC"
+  tagFill: "#225DDC",
 };
 
-// Left-side tag pills (label + tags they represent)
 const TAGS = [
   { label: "New York",   tags: ["People"]  },
   { label: "Design",     tags: ["Process"] },
@@ -26,31 +15,29 @@ const TAGS = [
   { label: "Climate",    tags: ["Context"] },
 ];
 
-// Project data (title + tags + optional children)
 const PROJECTS = [
   { title: "Climate change", tags: ["People","Purpose","brand repositioning","campaign","social"], children:[
     { title: "Campaign A", tags:["campaign"] },
     { title: "New York",   tags:["branding"] }
-  ]},
+  ], info: { desc: "A multi-year initiative connecting people to action on climate.", category: "Project", tools:"Workshops, Social, Campaign"} },
   { title: "Social housing", tags: ["Research","Context","campaign","social"], children:[
     { title:"Social Drops", tags:["social"] }
-  ]},
+  ], info: { desc: "Research-led proposals for accessible housing models.", category: "Project", tools:"Research, Policy, Mapping"} },
   { title: "Social cause", tags: ["Purpose","Process"], children:[
     { title:"Retail Pilot", tags:["retail"] }
-  ]},
+  ], info: { desc: "Brand platform to activate a social mission at scale.", category: "Project", tools:"Brand, Content"} },
   { title: "Specific time", tags: ["Process","People"], children:[
     { title:"Prototype 1", tags:["innovation"] },
     { title:"Prototype 2", tags:["innovation"] }
-  ]},
+  ], info: { desc: "Rapid prototyping to validate ideas with real users.", category: "Project", tools:"Prototyping, Testing"} },
   { title: "Context", tags: ["Research","Context"], children:[
     { title:"Market Scan", tags:["research"] }
-  ]},
+  ], info: { desc: "Context analysis and market scan for opportunities.", category: "Project", tools:"Research, Analysis"} },
   { title: "Stay Home", tags: ["Process","Research"], children:[
     { title:"Exhibit", tags:["exhibition"] }
-  ]},
+  ], info: { desc: "Cultural exhibition exploring life at home.", category: "Project", tools:"Exhibition, Curation"} },
 ];
 
-// Node color by tag
 const TAG_COLORS = {
   People: "#7C4DFF",
   Process: "#00BCD4",
@@ -67,288 +54,471 @@ const TAG_COLORS = {
   research: "#5D4037",
 };
 
-// ===================== STATE =====================
-let mode = "select"; // "select" or "graph"
+/* ====== RESPONSIVE UI CONFIG ====== */
+let UI = null;
 
-let tagItems = [];   // left pills
-let cell;            // drop zone
-let selected = [];   // [{label, tags[]}]
-let playBtn;         
-
-// Graph
-let nodes = [];
-let links = [];
-let centerNode = null;
-let draggingNode = null;
-
-
-
-function setup() {
-  cnv = createCanvas(windowWidth, windowHeight);
-  cnv.parent('machine');
-  window.__p5cleanup = () => { noLoop(); cnv?.remove(); };
-  setupLeftPanel();
-  setupDropZoneAndPlay();
-
-  // Create the (fixed) center node for the graph now
-  const cx = width * 0.62;
-  const cy = height * 0.52;
-  centerNode = new Node("•", cx, cy, [], true /*isCenter*/);
-  centerNode.fixed = true; // stays put
+function isMobileViewport() {
+  const shortSide = Math.min(windowWidth, windowHeight);
+  return shortSide <= 640;
 }
 
+function getUIConfig() {
+  const mobile = isMobileViewport();
+  return {
+    // world size (design coords)
+    baseWidth:  mobile ? 360 : 1200,
+    baseHeight: mobile ? 640 : 680,
+
+    // top bar
+    topBarRatio: mobile ? 0.24 : 0.18,
+    topBarMin:   110,
+    topBarMax:   240,
+
+    // selection zone (world)
+    zonePadX:    mobile ? 12 : 40,
+    zonePadY:    mobile ? 90 : 120,
+    zoneBottom:  mobile ? 140 : 160,
+
+    // play button (screen)
+    playRadius:  mobile ? 28 : 36,
+    playY:       (h) => Math.min(h - (mobile ? 60 : 80), h * 0.86),
+
+    // node sizes (world)
+    rCenter:     mobile ? 14 : 16,
+    rNode:       mobile ? 16 : 18,
+    rChild:      mobile ? 12 : 12,
+    rTag:        mobile ? 16 : 18,
+
+    // physics
+    repulseGraph: mobile ? 52000 : 60000,
+    repulseTag:   mobile ? 32000 : 38000,
+    damping:      mobile ? 0.88   : 0.86,
+    linkRest:     mobile ? 130    : 150,
+    childRest:    mobile ? 100    : 120,
+    kick:         mobile ? 1.8    : 2.2,
+
+    // fonts
+    fontTitle:   mobile ? 16 : 18,
+    fontBody:    mobile ? 12 : 13,
+    fontNode:    mobile ? 12 : 12,
+    fontCenter:  mobile ? 13 : 14,
+
+    // behavior
+    maxSelected: mobile ? 3 : 3, // keep 3 on both; tweak if needed
+  };
+}
+
+/* ====== STATE ====== */
+let mode = "select"; // "select" or "graph"
+
+// pointer (screen & world)
+const pointer = { x: 0, y: 0, worldX: 0, worldY: 0, down: false, justReleased: false, isTouch: false };
+
+// responsive world transform
+let baseWidth = 393;
+let baseHeight = 852;
+let scaleFactor = 1;
+let worldOffsetX = 0;
+let worldOffsetY = 0;
+
+// top bar
+let topBarH = 0;
+
+// Select mode
+let tagNodes = [];
+let selected = []; // [{label, tags[]}]
+let dropZone = null;
+let draggingTag = null;
+
+// Graph mode
+let nodes = [];    // includes center project
+let links = [];
+let centerNode = null; // GraphNode at world center
+let draggingNode = null;
+let hoveredNode = null;
+let activeNode = null;
+
+// play button (screen)
+let playBtn = null;
+
+/* ====== SETUP / RESIZE ====== */
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  textFont('monospace');
+  textAlign(CENTER, CENTER);
+
+  UI = getUIConfig();
+  baseWidth = UI.baseWidth;
+  baseHeight = UI.baseHeight;
+
+  computeTopBar();
+  computeTransform();
+
+  // Center node (world center)
+  centerNode = new GraphNode("•", baseWidth / 2, baseHeight / 2, [], true);
+  centerNode.fixed = true;
+  activeNode = centerNode;
+
+  setupSelectUI();
+  spawnFloatingTags();
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+
+  UI = getUIConfig();
+  baseWidth = UI.baseWidth;
+  baseHeight = UI.baseHeight;
+
+  computeTopBar();
+  computeTransform();
+  setupSelectUI();
+}
+
+/* ====== DRAW ====== */
 function draw() {
   background(COLORS.bg);
 
+  drawTopBar();
 
-  drawLeftPanel();
+  // update world pointer
+  const wpt = screenToWorld(pointer.x, pointer.y);
+  pointer.worldX = wpt.x;
+  pointer.worldY = wpt.y;
 
   if (mode === "select") {
+    // tag physics in world
+    for (const n of tagNodes) { n.resetForces(); n.applyRepulsion(tagNodes); }
+    for (const n of tagNodes) n.update();
+
+    // render world
+    push();
+    translate(worldOffsetX, worldOffsetY);
+    scale(scaleFactor);
     drawDropZone();
-    playBtn.draw();
+    for (const n of tagNodes) n.display();
+    pop();
+
+    drawPlayButton();
   } else {
     runGraph();
   }
 
-  drawFooterDot();
+  // cursor
+  if (!pointer.isTouch) {
+    noCursor(); fill(COLORS.blue); noStroke(); circle(pointer.x, pointer.y, 20);
+  } else cursor(ARROW);
+
+  if (pointer.justReleased) pointer.justReleased = false;
 }
 
-/* ===================== UI LAYOUT ===================== */
-
-function setupLeftPanel() {
-  const leftX = 40;
-  const topY  = 100;
-  const gap   = 88;
-
-  tagItems = TAGS.map((t, i) =>
-    new TagItem(leftX, topY + i * gap, 240, 54, t.label, t.tags)
-  );
+/* ====== TOP BAR ====== */
+function computeTopBar() {
+  topBarH = constrain(round(windowHeight * UI.topBarRatio), UI.topBarMin, UI.topBarMax);
 }
 
-function setupDropZoneAndPlay() {
-  const zoneX = PANEL_W + 40;
-  const zoneW = width - zoneX - 40;
-  const zoneY = 120;
-  const zoneH = height - zoneY - 140;
+function drawTopBar() {
+  noStroke(); fill(COLORS.blue); rect(0, 0, width, topBarH);
 
-  cell = new Cell(zoneX, zoneY, zoneW, zoneH);
+  const padX = 18, padY = 14, contentW = width - padX * 2;
+  fill(255); textAlign(LEFT, TOP);
 
-  playBtn = new PlayButton(
-    width * 0.62,
-    height * 0.64,
-    68,
-    () => {
-      if (selected.length >= 1 && selected.length <= MAX_SELECTED) {
-        launchGraph();
-      }
+  if (mode === "select") {
+    textSize(UI.fontTitle);
+    text("Pick up to 3 tags", padX, padY, contentW);
+
+    textSize(UI.fontBody);
+    const bodyY = padY + (UI.fontTitle + 8);
+    const bodyH = topBarH - bodyY - 16;
+    const picked = selected.map(s => s.label).join(", ") || "—";
+    text(
+      `Drag floating tags into the zone below, then hit Play.\nSelected: ${picked}`,
+      padX, bodyY, contentW, max(0, bodyH)
+    );
+  } else {
+    const node = activeNode || centerNode;
+    textSize(UI.fontTitle);
+    text(node.title || node.label || "—", padX, padY, contentW);
+
+    textSize(UI.fontBody);
+    const desc = node.info?.desc || "Click a project to reveal details.";
+    const bodyY = padY + (UI.fontTitle + 8);
+    const bodyH = topBarH - bodyY - 50;
+    text(desc, padX, bodyY, contentW, max(0, bodyH));
+
+    const rowH = 18;
+    const y0 = topBarH - rowH * 2 - 10;
+    stroke(255, 180); strokeWeight(1);
+    line(padX, y0 - 6, width - padX, y0 - 6);
+    noStroke(); fill(255); textSize(12);
+    textAlign(LEFT, CENTER); text("TAGS", padX, y0);
+    textAlign(RIGHT, CENTER); text(node.tags?.join(", ") || "—", width - padX, y0);
+
+    const y1 = y0 + rowH;
+    stroke(255, 180); line(padX, y1 - 6, width - padX, y1 - 6);
+    noStroke(); fill(255);
+    textAlign(LEFT, CENTER); text("CATEGORY", padX, y1);
+    textAlign(RIGHT, CENTER); text(node.info?.category || "—", width - padX, y1);
+  }
+}
+
+/* ====== WORLD TRANSFORM ====== */
+function computeTransform() {
+  const availW = windowWidth;
+  const availH = max(100, windowHeight - topBarH);
+  const sx = availW / baseWidth;
+  const sy = availH / baseHeight;
+  scaleFactor = min(sx, sy);
+
+  const worldW = baseWidth * scaleFactor;
+  const worldH = baseHeight * scaleFactor;
+  worldOffsetX = (availW - worldW) * 0.5;
+  worldOffsetY = topBarH + (availH - worldH) * 0.5;
+}
+function screenToWorld(px, py) {
+  return { x: (px - worldOffsetX) / scaleFactor, y: (py - worldOffsetY) / scaleFactor };
+}
+
+/* ====== SELECT MODE ====== */
+function setupSelectUI() {
+  const zx = UI.zonePadX;
+  const zy = UI.zonePadY;
+  const zw = baseWidth - UI.zonePadX * 2;
+  const zh = baseHeight - zy - UI.zoneBottom;
+  dropZone = { x: zx, y: zy, w: zw, h: zh };
+
+  playBtn = { x: width * 0.5, y: UI.playY(height), r: UI.playRadius };
+}
+
+function spawnFloatingTags() {
+  selected = [];
+  tagNodes = [];
+
+  const bounds = { minX: 24, maxX: baseWidth - 24, minY: 24, maxY: baseHeight - 24 };
+  for (const t of TAGS) {
+    const n = new TagNode(t.label, 0, 0, t.tags);
+    const ok = placeNodeNoOverlap(n, tagNodes, bounds, 420, 10);
+    if (!ok) {
+      n.x = random(bounds.minX, bounds.maxX);
+      n.y = random(bounds.minY, bounds.maxY);
     }
-  );
-}
-
-
-function drawLeftPanel() {
-  noStroke();
-  fill(COLORS.blue);
-  rect(32, 88, PANEL_W - 64, height - 160, 6);
-
-  // tags
-  for (let item of tagItems) item.draw();
-
-  // little arrow at bottom
-  stroke(255);
-  strokeWeight(1.5);
-  noFill();
-  const cx = 260;
-  const cy = height - 120;
-  ellipse(cx, cy, 34);
-  line(cx - 4, cy, cx + 6, cy);
-  line(cx + 2, cy - 6, cx + 6, cy);
-  line(cx + 2, cy + 6, cx + 6, cy);
+    n.vx = random(-1, 1);
+    n.vy = random(-1, 1);
+    tagNodes.push(n);
+  }
 }
 
 function drawDropZone() {
-  fill(COLORS.blue);
+  // title
+  fill(COLORS.blue); noStroke(); textAlign(CENTER, CENTER);
+  textSize(14);
+  text(`DRAG UP TO ${UI.maxSelected} TAGS HERE`, dropZone.x + dropZone.w * 0.5, dropZone.y - 16);
+
+  // zone box
   noStroke();
-  textAlign(CENTER, CENTER);
-  textSize(24);
-  text("DRAG YOUR TAGS HERE", cell.cx, cell.y + 24);
+  noFill(); 
+  rect(dropZone.x, dropZone.y, dropZone.w, dropZone.h, 10);
 
-  cell.update();
-  cell.draw();
-
-  textSize(12);
-  text("PRESS PLAY WHEN YOU'RE DONE", playBtn.x, playBtn.y + 56);
+  // count bubble
+  const cx = dropZone.x + dropZone.w * 0.5;
+  const cy = dropZone.y + dropZone.h * 0.42;
+  const r  = 28 + selected.length * 10;
+  noStroke(); fill(COLORS.blueMid); ellipse(cx, cy, r * 2);
+  fill(255); textSize(14); text(`${selected.length}/${UI.maxSelected}`, cx, cy);
 }
 
-function drawFooterDot() {
-  noFill();
-  stroke(COLORS.blue);
-  ellipse(52, height - 20, 10);
+function drawPlayButton() {
+  fill(COLORS.blue); noStroke(); textAlign(CENTER, CENTER);
+  textSize(12); text("PRESS PLAY WHEN YOU'RE DONE", playBtn.x, playBtn.y + 40);
+
+  const enabled = selected.length > 0 && selected.length <= UI.maxSelected;
+  noStroke(); fill(enabled ? COLORS.blueMid : "#B0C4FF");
+  ellipse(playBtn.x, playBtn.y, playBtn.r * 2);
+
+  // triangle
+  fill(255);
+  const r = playBtn.r * 0.65;
+  push(); translate(playBtn.x, playBtn.y);
+  beginShape(); vertex(-r * 0.3, -r); vertex(r, 0); vertex(-r * 0.3, r); endShape(CLOSE);
+  pop();
 }
 
-/* ===================== TAG PILL ===================== */
-
-class TagItem {
-  constructor(x, y, w, h, label, tags) {
-    this.x = x; this.y = y; this.w = w; this.h = h;
-    this.label = label;
-    this.tags = tags;
-    this.dragging = false;
-    this.dx = 0; this.dy = 0;
-    this.home = createVector(x, y);
-  }
-
-  contains(mx, my) {
-    return mx >= this.x && mx <= this.x + this.w &&
-           my >= this.y && my <= this.y + this.h;
-  }
-
-  draw() {
-    // follow mouse while dragging
-    if (this.dragging) {
-      this.x = mouseX - this.dx;
-      this.y = mouseY - this.dy;
-    }
-
-    // pill
-    stroke(COLORS.tagOutline);
-    strokeWeight(1.5);
-    fill(COLORS.tagFill);
-    rect(this.x, this.y, this.w, this.h, 26);
-
-    // label
-    noStroke();
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(22);
-    text(this.label, this.x + this.w/2, this.y + this.h/2);
-  }
-
-  resetHome() {
-    this.x = this.home.x;
-    this.y = this.home.y;
-  }
+function inDrop(mx, my) {
+  return mx >= dropZone.x && mx <= dropZone.x + dropZone.w &&
+         my >= dropZone.y && my <= dropZone.y + dropZone.h;
 }
 
-/* ===================== DROP ZONE ===================== */
+/* ====== GRAPH BUILDING (simple & clear) ====== */
 
-class Cell {
-  constructor(x, y, w, h) {
-    this.x = x; this.y = y; this.w = w; this.h = h;
-    this.cx = x + w * 0.45;
-    this.cy = y + h * 0.4;
+// Helper: score projects by selected tags (prefer AND, fallback to OR)
+function pickBestProject(selectedTags) {
+  const sel = new Set(selectedTags);
+  if (sel.size === 0) return null;
 
-    this.baseR = 40;
-    this.r = this.baseR;
-    this.targetR = this.baseR;
+  // 1) strict AND candidates
+  let candidates = PROJECTS.filter(p => [...sel].every(t => p.tags.includes(t)));
 
-    this.ease = 0.12;
-    this.breath = true;
-    this.breathAmp = 1.5;
+  // 2) if none, fallback to OR (at least one overlap), highest overlap wins
+  if (candidates.length === 0) {
+    candidates = PROJECTS
+      .map(p => ({ p, overlap: p.tags.filter(t => sel.has(t)).length }))
+      .filter(x => x.overlap > 0)
+      .sort((a, b) => b.overlap - a.overlap)
+      .map(x => x.p);
   }
 
-  inBounds(mx, my) {
-    return mx >= this.x && mx <= this.x + this.w &&
-           my >= this.y && my <= this.y + this.h;
-  }
+  return candidates[0] || null;
+}
 
-  setTargetFromSelection(n) {
-    if (n <= 0)       this.targetR = this.baseR;
-    else if (n === 1) this.targetR = this.baseR * 1.2;
-    else if (n === 2) this.targetR = this.baseR * 1.6;
-    else              this.targetR = this.baseR * 2.0;
-  }
+// Build clean children around a project (easy to understand)
+function buildChildrenForProject(project, selectedTags) {
+  const kids = [];
 
-  update() {
-    this.r = lerp(this.r, this.targetR, this.ease);
-    if (this.breath && abs(this.r - this.targetR) < 0.5) {
-      this.r += sin(frameCount * 0.06) * this.breathAmp * 0.1;
+  // 1) built-in children (from data)
+  if (project.children && project.children.length) {
+    for (const c of project.children) {
+      kids.push({ title: c.title, tags: c.tags || [], category: "Child" });
     }
   }
 
-  draw() {
-    // subtle area
-    noFill();
-    stroke(240);
-    rect(this.x, this.y, this.w, this.h, 8);
+  // 2) extra tags of the project (not in selected) → as “Tag: …”
+  for (const t of project.tags) {
+    if (!selectedTags.includes(t)) {
+      kids.push({ title: `Tag: ${t}`, tags: [t], category: "Tag" });
+    }
+  }
 
-    // main bubble
-    const R = this.r;
-    noStroke();
-    fill(COLORS.blueMid);
-    ellipse(this.cx, this.cy, R * 2.2);
+  // 3) simple info nodes (always present for clarity)
+  kids.push({ title: "Context",     tags: ["Context"],   category: "Info", desc: "High-level context about this project." });
+  kids.push({ title: "Description", tags: ["Purpose"],   category: "Info", desc: project.info?.desc || "Project overview." });
+  kids.push({ title: "Tools",       tags: ["Process"],   category: "Info", desc: project.info?.tools || "Methods & tools used." });
 
-    // ring
-    noFill();
-    stroke(255, 140);
-    ellipse(this.cx, this.cy, R * 2.2);
+  return kids;
+}
 
-    // count
-    noStroke();
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(14);
-    text(`${selected.length}/${MAX_SELECTED}`, this.cx, this.cy);
+
+function launchGraphFromSelection() {
+  mode = "graph";
+
+  // gather selected tag names (data tags)
+  const selectedTags = [];
+  for (const s of selected) s.tags.forEach(t => selectedTags.push(t));
+
+  // choose a project (simple & clear)
+  const chosen = pickBestProject(selectedTags);
+  nodes = [];
+  links = [];
+
+  if (!chosen) {
+    // no match → center stays dot with hint
+    centerNode = new GraphNode("No match", baseWidth/2, baseHeight/2, [], true, false, {
+      desc: "No project matches your selection. Try different tags.",
+      category: "Center"
+    });
+    centerNode.fixed = true;
+    nodes.push(centerNode);
+    activeNode = centerNode;
+    return;
+  }
+
+  // center becomes the project
+  centerNode = new GraphNode(chosen.title, baseWidth/2, baseHeight/2, chosen.tags, true, false, chosen.info || {
+    desc: "Selected project.",
+    category: "Project"
+  });
+  centerNode.fixed = true;
+  nodes.push(centerNode);
+  activeNode = centerNode;
+
+  // spawn children (clear & predictable)
+  const children = buildChildrenForProject(chosen, selectedTags);
+  const N = children.length;
+  const off = random(TWO_PI);
+
+  for (let i = 0; i < N; i++) {
+    const a = off + (TWO_PI * i) / Math.max(1, N);
+    const child = new GraphNode(children[i].title, centerNode.x, centerNode.y, children[i].tags || [], false, true, {
+      desc: children[i].desc || "—",
+      category: children[i].category || "Child"
+    });
+    child.birth.parent = centerNode;
+    child.birth.angle  = a;
+    child.birth.kick   = UI.kick;
+
+    nodes.push(child);
+    const L = new GraphLink(centerNode, child);
+    L.restLength = UI.childRest;
+    links.push(L);
+  }
+
+  // Optional: cross-link children that share a tag (light)
+  for (let i = 1; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].sharesTagWith && nodes[i].sharesTagWith(nodes[j])) {
+        links.push(new GraphLink(nodes[i], nodes[j]));
+      }
+    }
   }
 }
 
-/* ===================== PLAY BUTTON ===================== */
+/* ====== GRAPH RENDER ====== */
+function runGraph() {
+  // hover (world)
+  hoveredNode = null;
+  for (const n of nodes) {
+    if (n.isPointInside(pointer.worldX, pointer.worldY)) { hoveredNode = n; break; }
+  }
+  if (hoveredNode) activeNode = hoveredNode;
 
-class PlayButton {
-  constructor(x, y, size, onClick) {
-    this.x = x; this.y = y; this.size = size;
-    this.onClick = onClick;
-  }
-  enabled() {
-    return selected.length > 0 && selected.length <= MAX_SELECTED;
-  }
-  contains(mx, my) {
-    const s = this.size;
-    return dist(mx, my, this.x, this.y) <= s * 0.8;
-  }
-  draw() {
-    push();
-    noStroke();
-    fill(this.enabled() ? COLORS.blueMid : "#B0C4FF");
-    ellipse(this.x, this.y, this.size * 1.6);
+  // physics (world)
+  for (const n of nodes) n.resetForces();
+  for (const n of nodes) n.applyRepulsion(nodes);
+  for (const l of links) l.applyAttraction();
+  for (const n of nodes) n.updateInGraph();
 
-    // triangle
-    fill(255);
-    const r = this.size * 0.52;
-    beginShape();
-    vertex(this.x - r * 0.3, this.y - r);
-    vertex(this.x + r,        this.y);
-    vertex(this.x - r * 0.3, this.y + r);
-    endShape(CLOSE);
-    pop();
-  }
+  // draw world
+  push();
+  translate(worldOffsetX, worldOffsetY);
+  scale(scaleFactor);
+  for (const l of links) l.display();
+  for (const n of nodes) n.display();
+  pop();
 }
 
-/* ===================== INPUT (SELECT MODE) ===================== */
+/* ====== INPUT ====== */
+function mouseMoved(){ pointer.x = mouseX; pointer.y = mouseY; }
 
 function mousePressed() {
+  pointer.isTouch = false;
+  pointer.x = mouseX; pointer.y = mouseY; pointer.down = true;
+
   if (mode === "select") {
-    // start dragging any pill we clicked
-    for (let item of tagItems) {
-      if (item.contains(mouseX, mouseY)) {
-        item.dragging = true;
-        item.dx = mouseX - item.x;
-        item.dy = mouseY - item.y;
+    // pick tag (world hit)
+    for (let i = tagNodes.length - 1; i >= 0; i--) {
+      const t = tagNodes[i];
+      if (t.isInside(pointer.worldX, pointer.worldY)) {
+        draggingTag = t;
+        t.dragging = true;
+        t.dx = pointer.worldX - t.x;
+        t.dy = pointer.worldY - t.y;
         return;
       }
     }
-    // play click
-    if (playBtn.contains(mouseX, mouseY) && playBtn.enabled()) {
-      playBtn.onClick();
+    // play (screen)
+    const d = dist(mouseX, mouseY, playBtn.x, playBtn.y);
+    if (d <= playBtn.r && selected.length > 0 && selected.length <= UI.maxSelected) {
+      launchGraphFromSelection();
       return;
     }
   } else {
-    // GRAPH MODE: start dragging a node
+    // graph drag (world)
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
-      if (n.isOver(mouseX, mouseY)) {
-        draggingNode = n;
-        n.fixed = true; // freeze physics while dragging
+      if (n.isPointInside(pointer.worldX, pointer.worldY)) {
+        draggingNode = n; n.fixed = true;
+        n.offsetX = pointer.worldX - n.x;
+        n.offsetY = pointer.worldY - n.y;
+        activeNode = n;
         return;
       }
     }
@@ -356,327 +526,200 @@ function mousePressed() {
 }
 
 function mouseDragged() {
-  // Make dragged node actually follow the mouse (beginner friendly!)
-  if (mode === "graph" && draggingNode) {
-    draggingNode.x = constrain(mouseX, PANEL_W + 40, width - 30);
-    draggingNode.y = constrain(mouseY, 90, height - 70);
+  pointer.x = mouseX; pointer.y = mouseY;
+
+  if (mode === "select" && draggingTag) {
+    draggingTag.x = pointer.worldX - draggingTag.dx;
+    draggingTag.y = pointer.worldY - draggingTag.dy;
+  } else if (mode === "graph" && draggingNode) {
+    draggingNode.x = pointer.worldX - draggingNode.offsetX;
+    draggingNode.y = pointer.worldY - draggingNode.offsetY;
   }
 }
 
 function mouseReleased() {
-  if (mode === "select") {
-    for (let item of tagItems) {
-      if (item.dragging) {
-        item.dragging = false;
+  pointer.x = mouseX; pointer.y = mouseY;
+  pointer.down = false; pointer.justReleased = true;
 
-        // If dropped in zone and not over limit, add selection by label
-        if (cell.inBounds(mouseX, mouseY)) {
-          const duplicate = selected.some(s => s.label === item.label);
-          if (!duplicate && selected.length < MAX_SELECTED) {
-            selected.push({ label: item.label, tags: item.tags.slice() });
-            cell.setTargetFromSelection(selected.length);
-          }
+  if (mode === "select") {
+    if (draggingTag) {
+      draggingTag.dragging = false;
+
+      // drop into zone → add selection
+      if (inDrop(pointer.worldX, pointer.worldY)) {
+        const already = selected.some(s => s.label === draggingTag.label);
+        if (!already && selected.length < UI.maxSelected) {
+          selected.push({ label: draggingTag.label, tags: draggingTag.tags.slice() });
         }
-        // snap back to left panel
-        item.resetHome();
       }
+      draggingTag = null;
     }
   } else {
-    if (draggingNode) {
-      draggingNode.fixed = false; // re-enable physics
+    if (!draggingNode) {
+      // tap to focus
+      for (let node of nodes) {
+        if (node.isPointInside(pointer.worldX, pointer.worldY)) {
+          activeNode = node;
+          break;
+        }
+      }
+    } else {
+      draggingNode.fixed = false;
       draggingNode = null;
     }
   }
 }
 
-/* ===================== GRAPH ===================== */
+// touch
+function touchStarted(){ pointer.isTouch = true; if (touches.length){ pointer.x=touches[0].x; pointer.y=touches[0].y; mousePressed(); } return false; }
+function touchMoved(){ if (touches.length){ pointer.x=touches[0].x; pointer.y=touches[0].y; mouseDragged(); } return false; }
+function touchEnded(){ pointer.down=false; pointer.justReleased=true; mouseReleased(); return false; }
 
-class Node {
-  constructor(title, x, y, tags = [], isCenter = false, isChild = false) {
-    this.title = title;
-    this.x = x; this.y = y;
-    this.vx = 0; this.vy = 0;
-    this.fx = 0; this.fy = 0;
-    this.tags = tags;
-    this.fixed = false;
-    this.isCenter = isCenter;
-    this.isChild = isChild;
-
-    this.baseR = isCenter ? 20 : isChild ? 12 : 18;
-    this.r = isCenter ? this.baseR : 0;   // newborns start at 0
-
-    // birth animation state
-    this.birth = {
-      active: !isCenter,
-      t: 0,
-      duration: 42,    // frames (~0.7s at 60fps)
-      angle: 0,        // set by spawner
-      kick: 2.2,       // outward push that decays
-      parent: null     // set by spawner for clamp
-    };
-
-    this.spawned = false;  // prevent double-spawn of children
-  }
-
-  // Smoothstep 0→1
-  _smooth(u) { return u*u*(3 - 2*u); }
-  birthU() {
-    if (!this.birth.active) return 1;
-    return constrain(this.birth.t / this.birth.duration, 0, 1);
-  }
-  // 0 at birth start → 1 when fully born. Used to scale forces.
-  forceScale() {
-    if (this.isCenter) return 1;
-    return this._smooth(this.birthU());
-  }
-
-  isOver(mx, my) { return dist(mx, my, this.x, this.y) < this.r + 6; }
-  resetForces()  { this.fx = 0; this.fy = 0; }
-  applyForce(fx, fy) { this.fx += fx; this.fy += fy; }
-
-  // Repel from other nodes (scaled while being born)
-  applyRepulsion(others) {
-    for (let o of others) {
-      if (o === this) continue;
-      const dx = this.x - o.x;
-      const dy = this.y - o.y;
-      const d2 = dx*dx + dy*dy + 0.1;
-      let f  = 60000 / d2;
-
-      // scale by "how born" the pair is → near 0 at first
-      const s = min(this.forceScale(), o.forceScale());
-      f *= s;
-
-      const inv = 1 / Math.sqrt(d2);
-      this.fx += dx * inv * f;
-      this.fy += dy * inv * f;
+/* ====== HELPERS ====== */
+function placeNodeNoOverlap(newNode, others, bounds, maxTries = 250, pad = 6) {
+  for (let i = 0; i < maxTries; i++) {
+    newNode.x = random(bounds.minX + newNode.r, bounds.maxX - newNode.r);
+    newNode.y = random(bounds.minY + newNode.r, bounds.maxY - newNode.r);
+    let ok = true;
+    for (const o of others) {
+      const dx = newNode.x - o.x, dy = newNode.y - o.y;
+      if (Math.hypot(dx, dy) < (newNode.r + o.r + pad)) { ok = false; break; }
     }
+    if (ok) return true;
   }
-
-  updateBirth() {
-    if (!this.birth.active) return;
-
-    this.birth.t++;
-    const u = this.birthU();
-    const easeOut = (x) => 1 - pow(1 - x, 3);
-
-    // grow radius 0 → baseR
-    this.r = lerp(0, this.baseR, easeOut(u));
-
-    // gentle outward push that decays
-    const k = this.birth.kick * (1 - u);
-    this.vx += cos(this.birth.angle) * 0.05 * k;
-    this.vy += sin(this.birth.angle) * 0.05 * k;
-
-    if (u >= 1) {
-      this.birth.active = false;
-      this.r = this.baseR;
-    }
-  }
-
-  update() {
-    if (this.fixed) return;
-
-    // animate birth first (affects r and adds a tiny push)
-    this.updateBirth();
-
-    // integrate physics
-    this.vx += this.fx * 0.01;
-    this.vy += this.fy * 0.01;
-    this.vx *= 0.86;
-    this.vy *= 0.86;
-    this.x += this.vx;
-    this.y += this.vy;
-
-    // While being born, keep the node within a radius that grows
-    // from 0 → (parent.r + 12). Feels like it's inside and then peels out.
-    if (this.birth.active && this.birth.parent) {
-      const u = this._smooth(this.birthU());
-      const maxDist = lerp(0, this.birth.parent.r + 12, u);
-      const dx = this.x - this.birth.parent.x;
-      const dy = this.y - this.birth.parent.y;
-      const d  = sqrt(dx*dx + dy*dy);
-      if (d > maxDist && d > 0) {
-        const s = maxDist / d;
-        this.x = this.birth.parent.x + dx * s;
-        this.y = this.birth.parent.y + dy * s;
-        // also damp velocity when clamped to avoid popping
-        this.vx *= 0.85;
-        this.vy *= 0.85;
-      }
-    }
-
-    // keep on screen (avoid left panel)
-    this.x = constrain(this.x, PANEL_W + 40, width - 30);
-    this.y = constrain(this.y, 90, height - 70);
-  }
-
-  draw() {
-    let fillCol = "#CBD5E1";
-    for (const t of this.tags) {
-      if (TAG_COLORS[t]) { fillCol = TAG_COLORS[t]; break; }
-    }
-    noStroke();
-    fill(fillCol);
-    ellipse(this.x, this.y, max(1, this.r * 2)); // guard tiny sizes
-
-    fill(40);
-    textAlign(CENTER, TOP);
-    textSize(this.isCenter ? 14 : 12);
-    text(this.title, this.x, this.y + this.r + 6);
-  }
-}
-
-
-class Link {
-  constructor(a, b) {
-    this.a = a; this.b = b;
-    this.rest = 150;
-    this.k = 0.035;
-  }
-  apply() {
-    const dx = this.b.x - this.a.x;
-    const dy = this.b.y - this.a.y;
-    const d = max(1, sqrt(dx*dx + dy*dy));
-
-    // spring strength ramps in as nodes are born
-    const s = min(this.a.forceScale(), this.b.forceScale());
-    const kEff = this.k * s;
-
-    const f = (d - this.rest) * kEff;
-    const fx = (f * dx) / d;
-    const fy = (f * dy) / d;
-    this.a.applyForce(fx, fy);
-    this.b.applyForce(-fx, -fy);
-  }
-  draw() {
-    stroke(210);
-    strokeWeight(1.5);
-    line(this.a.x, this.a.y, this.b.x, this.b.y);
-  }
-}
-
-
-/* ----------------- Build & Run Graph ----------------- */
-
-function launchGraph() {
-  mode = "graph";
-
-  const active = new Set();
-  for (const s of selected) s.tags.forEach(t => active.add(t));
-
-  const result = PROJECTS.filter(p => {
-    if (active.size === 0) return false;
-    if (MATCH_MODE === "AND") return p.tags.every(t => active.has(t));
-    return p.tags.some(t => active.has(t));
-  });
-
-  nodes = [centerNode];
-  links = [];
-
-  const cx = centerNode.x, cy = centerNode.y;
-  const N  = max(1, result.length);
-
-  for (let i = 0; i < result.length; i++) {
-    const n = new Node(result[i].title, cx, cy, result[i].tags, false, false);
-    n.data = result[i];
-
-    // set parent + a clean peel direction (plus tiny jitter)
-    n.birth.parent = centerNode;
-    n.birth.angle  = (TWO_PI * i) / N + random(-0.12, 0.12);
-    n.birth.kick   = 2.2;
-
-    nodes.push(n);
-    links.push(new Link(centerNode, n));
-  }
-
-  // connect projects with shared tags
-  for (let i = 1; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      if (shareTag(nodes[i].tags, nodes[j].tags)) {
-        links.push(new Link(nodes[i], nodes[j]));
-      }
-    }
-  }
-}
-
-
-
-function runGraph() {
-  // “background” pane on right
-  noStroke();
-  fill(255);
-  rect(PANEL_W, 64, width - PANEL_W, height - 64);
-
-  // Physics
-  for (let n of nodes) n.resetForces();
-  for (let n of nodes) n.applyRepulsion(nodes);
-  for (let l of links) l.apply();
-
-  // Update node positions
-  for (let n of nodes) n.update();
-
-  // Draw links behind nodes
-  for (let l of links) l.draw();
-
-  // Draw nodes
-  for (let n of nodes) n.draw();
-
-  // Sidebar blurb
-  fill(COLORS.blue);
-  noStroke();
-  textAlign(LEFT, TOP);
-  textSize(14);
-  text(
-    "Short extremely interesting blurb about the important information specifically about this project and the coloured tags will show specific information of information used for this",
-    PANEL_W + 10, 110, 400, 200
-  );
-}
-
-/* ----------------- Graph Interactions ----------------- */
-
-function mouseClicked() {
-  if (mode !== "graph") return;
-
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (!n.isCenter && n.isOver(mouseX, mouseY)) {
-      if (n.spawned) return;
-      n.spawned = true;
-
-      const kids = (n.data && n.data.children) ? n.data.children : [];
-      if (!kids.length) return;
-
-      const N = kids.length;
-      const off = random(TWO_PI);
-
-      for (let k = 0; k < N; k++) {
-        const child = new Node(kids[k].title, n.x, n.y, kids[k].tags || [], false, true);
-        child.birth.parent = n;
-        child.birth.angle  = off + (TWO_PI * k) / N;
-        child.birth.kick   = 2.0;
-
-        nodes.push(child);
-        links.push(new Link(n, child));
-      }
-      return;
-    }
-  }
-}
-
-
-function keyPressed() {
-  if (mode === "graph" && (keyCode === BACKSPACE || keyCode === DELETE)) {
-    mode = "select";
-    selected = [];
-    // keep centerNode around
-  }
-}
-
-/* ===================== HELPERS ===================== */
-
-function shareTag(a, b) {
-  for (const t of a) if (b.includes(t)) return true;
   return false;
 }
 
+/* ====== CLASSES ====== */
+// floating tag (world)
+class TagNode {
+  constructor(label, x, y, tags) {
+    this.label = label;
+    this.x = x; this.y = y;
+    this.r = UI.rTag;
+    this.tags = tags;
+    this.vx = 0; this.vy = 0; this.fx = 0; this.fy = 0;
+    this.dragging = false; this.dx = 0; this.dy = 0;
+  }
+  isInside(wx, wy){ return dist(wx, wy, this.x, this.y) < this.r + 12; }
+  resetForces(){ this.fx = 0; this.fy = 0; }
+  applyRepulsion(others){
+    for (const o of others) {
+      if (o === this) continue;
+      const dx = this.x - o.x, dy = this.y - o.y;
+      const d2 = dx*dx + dy*dy + 0.1;
+      const inv = 1 / Math.sqrt(d2);
+      const f = UI.repulseTag / d2;
+      this.fx += dx * inv * f; this.fy += dy * inv * f;
+    }
+  }
+  update(){
+    if (this.dragging) return;
+    this.vx += this.fx * 0.01; this.vy += this.fy * 0.01;
+    this.vx *= 0.92; this.vy *= 0.92;
+    this.x += this.vx; this.y += this.vy;
+    this.x = constrain(this.x, this.r, baseWidth - this.r);
+    this.y = constrain(this.y, this.r, baseHeight - this.r);
+  }
+  display(){
+    noStroke(); fill(COLORS.tagFill); ellipse(this.x, this.y, this.r * 2);
+    fill(255); textSize(UI.fontNode); textAlign(CENTER, TOP);
+    text(this.label, this.x, this.y + this.r + 6);
+  }
+}
+
+// graph node (world) with birth animation
+class GraphNode {
+  constructor(title, x, y, tags = [], isCenter = false, isChild = false, info = {}) {
+    this.title = title; this.x = x; this.y = y;
+    this.tags = tags; this.isCenter = isCenter; this.isChild = isChild;
+
+    this.baseR = isCenter ? UI.rCenter : isChild ? UI.rChild : UI.rNode;
+    this.r = isCenter ? this.baseR : 0;
+
+    this.vx = 0; this.vy = 0; this.fx = 0; this.fy = 0; this.fixed = false;
+    this.spawned = false;
+    this.info = { desc: info.desc || (isCenter ? "Pick projects by tags and explore relations." : "—"),
+                  category: info.category || (isCenter ? "Center" : "Node"),
+                  tools: info.tools || "" };
+
+    this.birth = { active: !isCenter, t: 0, duration: 42, angle: 0, kick: UI.kick, parent: null };
+  }
+
+  _smooth(u){ return u*u*(3-2*u); }
+  birthU(){ return this.birth.active ? constrain(this.birth.t/this.birth.duration, 0, 1) : 1; }
+  forceScale(){ return this._smooth(this.birthU()); }
+
+  resetForces(){ this.fx=0; this.fy=0; }
+  applyForce(fx,fy){ this.fx += fx; this.fy += fy; }
+
+  applyRepulsion(others){
+    for (const o of others) {
+      if (o === this) continue;
+      const dx = this.x - o.x, dy = this.y - o.y;
+      const d2 = dx*dx + dy*dy + 0.1;
+      let f = UI.repulseGraph / d2;
+      const s = Math.min(this.forceScale(), o.forceScale ? o.forceScale() : 1);
+      f *= s;
+      const inv = 1 / Math.sqrt(d2);
+      this.fx += dx * inv * f; this.fy += dy * inv * f;
+    }
+  }
+
+  _updateBirth(){
+    if (!this.birth.active) return;
+    this.birth.t++;
+    const u = this.birthU();
+    const easeOut = (x)=>1 - pow(1 - x, 3);
+    this.r = lerp(0, this.baseR, easeOut(u));
+    const k = this.birth.kick * (1 - u);
+    this.vx += cos(this.birth.angle) * 0.05 * k;
+    this.vy += sin(this.birth.angle) * 0.05 * k;
+    if (u >= 1) { this.birth.active = false; this.r = this.baseR; }
+  }
+
+  updateInGraph(){
+    if (this.fixed) return;
+    this._updateBirth();
+    this.vx += this.fx * 0.01; this.vy += this.fy * 0.01;
+    this.vx *= UI.damping; this.vy *= UI.damping;
+    this.x += this.vx; this.y += this.vy;
+    this.x = constrain(this.x, this.baseR, baseWidth - this.baseR);
+    this.y = constrain(this.y, this.baseR, baseHeight - this.baseR);
+  }
+
+  display(){
+    let fillCol = "#CBD5E1";
+    for (const t of this.tags) { if (TAG_COLORS[t]) { fillCol = TAG_COLORS[t]; break; } }
+    noStroke(); fill(fillCol); ellipse(this.x, this.y, max(1, this.r * 2));
+    fill(40); textAlign(CENTER, TOP);
+    textSize(this.isCenter ? UI.fontCenter : UI.fontNode);
+    text(this.title, this.x, this.y + this.r + 6);
+  }
+
+  isPointInside(wx, wy){ return dist(wx, wy, this.x, this.y) < Math.max(8, this.r); }
+
+  sharesTagWith(other){
+    if (!other || !other.tags) return false;
+    for (const t of this.tags) if (other.tags.includes(t)) return true;
+    return false;
+  }
+}
+
+// spring link (world)
+class GraphLink {
+  constructor(a,b){ this.a=a; this.b=b; this.restLength=UI.linkRest; this.strength=0.035; }
+  applyAttraction(){
+    const dx = this.b.x - this.a.x, dy = this.b.y - this.a.y;
+    const d = sqrt(dx*dx + dy*dy) || 1;
+    const s = Math.min(this.a.forceScale?.() ?? 1, this.b.forceScale?.() ?? 1);
+    const force = (d - this.restLength) * (this.strength * s);
+    const fx = (force * dx) / d, fy = (force * dy) / d;
+    this.a.applyForce(fx, fy); this.b.applyForce(-fx, -fy);
+  }
+  display(){
+    stroke(220); strokeWeight(1.5);
+    if (hoveredNode && (this.a === hoveredNode || this.b === hoveredNode)) stroke(0);
+    line(this.a.x, this.a.y, this.b.x, this.b.y);
+  }
+}
