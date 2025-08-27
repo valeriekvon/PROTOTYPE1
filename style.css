@@ -15,7 +15,7 @@ html, body {
   }
   @font-face {
     font-family: "Headers";
-    src: url('./fonts/PPNeueMachina-InktrapLight.otf') ;
+    src: url('/fonts/PPNeueMachina-InktrapLight.otf') ;
     font-weight: normal;
   }
 
