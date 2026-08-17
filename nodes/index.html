@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="preload" href="fonts/static/RedHatDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PROJCT structure</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="button.css">
-  <script src="button.js" defer></script>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../button.css">
+  <script src="../button.js" defer></script>
 
+  
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/p5.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.8/lib/addons/p5.sound.min.js"></script>
 </head>
 
 <body class="nodes-page">
   <div class="header">
     <div class="logo_PROJCT">
-      <a href="about.html">
+      <a href="../about.html">
       <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 239.57" aria-label="PROJCT" role="img">
         <title>PROJCT</title>
         <g>
@@ -47,10 +50,10 @@
       <!-- Desktop links -->
       <div class="button-header button_header1 desktop">
        
-        <div class="nav-arrow"><p><a href="about.html">About us</a></p></div>
-        <div class="nav-arrow"><p><a href="projects.html">Projects</a></p></div>
-        <div class="nav-arrow"><p><a href="nodes.html">The world we live in</a></p></div>
-        <div class="nav-text"><p><a href="index.html">Index</a></p></div>
+        <div class="nav-arrow"><p><a href="../about.html">About us</a></p></div>
+        <div class="nav-arrow"><p><a href="../projects.html">Projects</a></p></div>
+        <div class="nav-arrow"><p><a href="../nodes.html">The world we live in</a></p></div>
+        <div class="nav-text"><p><a href="../">Index</a></p></div>
       </div>
     </div>
   </div>
@@ -67,16 +70,16 @@
 
     <div class="overlay-inner">
       <div class="row1">
-        <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
-        <a class="overlay-link" href="about.html">About</a>
+        <img src="../SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
+        <a class="overlay-link" href="../about.html">About</a>
       </div>
       <div class="row2">
-        <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
-        <a class="overlay-link" href="nodes.html">The world we live in</a>
+        <img src="../SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
+        <a class="overlay-link" href="../nodes.html">The world we live in</a>
       </div>
       <div class="row3">
-        <img src="SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
-        <a class="overlay-link" href="index.html">Index</a>
+        <img src="../SVG/Asset 1.svg" alt="Arrow" class="nav-svg-mobile"/>
+        <a class="overlay-link" href="../">Index</a>
       </div>
     </div>
   </nav>
@@ -190,36 +193,40 @@
   <!-- </div> -->
   <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
   <script src="https://unpkg.com/swup@4"></script>
   <script src="https://unpkg.com/@swup/forms-plugin@2"></script>
   <script src="https://unpkg.com/@swup/scroll-plugin@3"></script>
   <script src="https://unpkg.com/@swup/head-plugin@2"></script>
 <!-- libs -->
-<script src="./libs/p5.min.js"></script>
+<script src="../libs/p5.min.js"></script>
 
 <!-- app config/data first -->
-<script src="./scripts/config.js"></script>
-<script src="./scripts/state.js"></script>
+<script src="../scripts/config.js"></script>
+<script src="../scripts/state.js"></script>
 
 <!-- rendering + classes -->
-<script src="./scripts/classes.js"></script>
-<script src="./scripts/world.js"></script>
+<script src="../scripts/classes.js"></script>
+<script src="../scripts/world.js"></script>
 
 <!-- graph building logic (MUST come before input.js) -->
-<script src="./scripts/graph_logic.js"></script>
+<script src="../scripts/graph_logic.js"></script>
 
 <!-- UI bits -->
-<script src="./scripts/select_mode.js"></script>
-<script src="./scripts/ui_topbar.js"></script>
+<script src="../scripts/select_mode.js"></script>
+<script src="../scripts/ui_topbar.js"></script>
 
 <!-- input handlers (mouse/touch/keyboard) -->
-<script src="./scripts/input.js"></script>
+<script src="../scripts/input.js"></script>
 
 <!-- p5 setup/draw last -->
-<script src="./scripts/main.js"></script>
-<script src="./scripts/googlesheet.js"></script>
+<script src="../scripts/main.js"></script>
+<script src="../scripts/googlesheet.js"></script>
 
-  <script src="./interaction.js" defer></script>
+  <script src="../interaction.js" defer></script>
  
 </body>
 </html>
